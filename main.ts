@@ -20,7 +20,7 @@ for (const filename of argv.slice(2)) {
     parser: {
       parse: source => babelParse(source, {
         sourceType: 'module',
-        plugins: ['typescript'],
+        plugins: ['jsx', 'typescript'],
       }),
     },
   });
