@@ -6,15 +6,29 @@ import { parse as recastParse, print, types } from 'recast';
 
 import type { namedTypes } from 'ast-types';
 
+const bySourceValue = (
+  a: namedTypes.ImportDeclaration,
+  b: namedTypes.ImportDeclaration,
+) => (typeof a.source.value !== 'string' || typeof b.source.value !== 'string')
+  ?  0
+  : lexicographic(a.source.value, b.source.value);
+
+const lexicographic = (a: string, b: string) => {
+  const aPoints = [...a].map(x => x.codePointAt(0));
+  const bPoints = [...b].map(x => x.codePointAt(0));
+
+  const len = Math.min(aPoints.length, bPoints.length);
+  for (let i = 0; i < len; i++) {
+    if (aPoints[i] !== bPoints[i]) {
+      return aPoints[i] - bPoints[i];
+    }
+  }
+
+  return aPoints.length - bPoints.length;
+};
+
 for (const filename of argv.slice(2)) {
   const code = readFileSync(filename, 'utf8');
-
-  const bySourceValue = (
-    a: namedTypes.ImportDeclaration,
-    b: namedTypes.ImportDeclaration,
-  ) => (typeof a.source.value !== 'string' || typeof b.source.value !== 'string')
-    ?  0
-    : a.source.value.localeCompare(b.source.value);
 
   const ast = recastParse(code, {
     parser: {
