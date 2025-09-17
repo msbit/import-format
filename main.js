@@ -16,29 +16,31 @@ const ast = (0, recast_1.parse)(code, {
         }),
     },
 });
-const valueImportNodes = [];
-const typeImportNodes = [];
+const importNodes = [];
 recast_1.types.visit(ast, {
     visitImportDeclaration(path) {
-        switch (path.node.importKind) {
-            case 'value':
-                valueImportNodes.push(path.node);
-                break;
-            case 'type':
-                typeImportNodes.push(path.node);
-                break;
-            default:
-                throw new Error(`unhandled import kind: ${path.node.importKind}`);
-        }
+        importNodes.push(path.node);
         path.prune();
         return false;
     },
 });
-valueImportNodes.sort(bySourceValue);
-typeImportNodes.sort(bySourceValue);
+const libraryValueImportNodes = importNodes
+    .filter(node => node.importKind === 'value' && node.source.value[0] !== '.');
+const projectValueImportNodes = importNodes
+    .filter(node => node.importKind === 'value' && node.source.value[0] === '.');
+const libraryTypeImportNodes = importNodes
+    .filter(node => node.importKind === 'type' && node.source.value[0] !== '.');
+const projectTypeImportNodes = importNodes
+    .filter(node => node.importKind === 'type' && node.source.value[0] === '.');
+libraryValueImportNodes.sort(bySourceValue);
+projectValueImportNodes.sort(bySourceValue);
+libraryTypeImportNodes.sort(bySourceValue);
+projectTypeImportNodes.sort(bySourceValue);
 ast.program.body = [
-    ...valueImportNodes,
-    ...typeImportNodes,
+    ...libraryValueImportNodes,
+    ...projectValueImportNodes,
+    ...libraryTypeImportNodes,
+    ...projectTypeImportNodes,
     ...ast.program.body,
 ];
 (0, node_fs_1.writeFileSync)(node_process_1.argv[2], (0, recast_1.print)(ast).code.replace(/\n+$/, '\n'));
