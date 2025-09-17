@@ -1,7 +1,8 @@
+import { readFileSync, writeFileSync } from 'node:fs';
+
 import { parse as babelParse } from '@babel/parser';
-import { parse as recastParse, print, types } from 'recast';
 import { argv } from 'node:process';
-import { readFileSync } from 'node:fs';
+import { parse as recastParse, print, types } from 'recast';
 
 import type { namedTypes } from 'ast-types';
 
@@ -52,6 +53,4 @@ ast.program.body = [
   ...ast.program.body,
 ];
 
-const output = print(ast).code;
-
-console.log(output);
+writeFileSync(argv[2], print(ast).code.replace(/\n+$/, '\n'));

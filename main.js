@@ -1,9 +1,9 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-const parser_1 = require("@babel/parser");
-const recast_1 = require("recast");
-const node_process_1 = require("node:process");
 const node_fs_1 = require("node:fs");
+const parser_1 = require("@babel/parser");
+const node_process_1 = require("node:process");
+const recast_1 = require("recast");
 const code = (0, node_fs_1.readFileSync)(node_process_1.argv[2], 'utf8');
 const bySourceValue = (a, b) => (typeof a.source.value !== 'string' || typeof b.source.value !== 'string')
     ? 0
@@ -41,5 +41,4 @@ ast.program.body = [
     ...typeImportNodes,
     ...ast.program.body,
 ];
-const output = (0, recast_1.print)(ast).code;
-console.log(output);
+(0, node_fs_1.writeFileSync)(node_process_1.argv[2], (0, recast_1.print)(ast).code.replace(/\n+$/, '\n'));
