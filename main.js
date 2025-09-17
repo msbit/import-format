@@ -2,8 +2,8 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const node_fs_1 = require("node:fs");
-const parser_1 = require("@babel/parser");
 const node_process_1 = require("node:process");
+const parser_1 = require("@babel/parser");
 const recast_1 = require("recast");
 const bySourceValue = (a, b) => (typeof a.source.value !== 'string' || typeof b.source.value !== 'string')
     ? 0

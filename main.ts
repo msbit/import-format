@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 
 import { readFileSync, writeFileSync } from 'node:fs';
+import { argv } from 'node:process';
 
 import { parse as babelParse } from '@babel/parser';
-import { argv } from 'node:process';
 import { parse as recastParse, print, types } from 'recast';
 
 import type { namedTypes } from 'ast-types';
