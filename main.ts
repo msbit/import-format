@@ -1,51 +1,57 @@
-import * as recast from "recast";
-import { namedTypes as n } from "ast-types";
-import * as babelParser from "@babel/parser";
+import { parse as babelParse } from '@babel/parser';
+import { parse as recastParse, print, types } from 'recast';
+import { argv } from 'node:process';
+import { readFileSync } from 'node:fs';
 
-// Sample code with comments and spacing
-const code = `
-// A comment before imports
+import type { namedTypes } from 'ast-types';
 
-import z from "z-lib";   // Z import
-import a from "a-lib";   // A import
+const code = readFileSync(argv[2], 'utf8');
 
-// Utility import
-import { b } from "./utils";
+const bySourceValue = (
+  a: namedTypes.ImportDeclaration,
+  b: namedTypes.ImportDeclaration,
+) => (typeof a.source.value !== 'string' || typeof b.source.value !== 'string')
+  ?  0
+  : a.source.value.localeCompare(b.source.value);
 
-const something = 42;
-`;
-
-// Step 1: Parse using Recast with Babel parser
-const ast = recast.parse(code, {
+const ast = recastParse(code, {
   parser: {
-    parse(source) {
-      return babelParser.parse(source, {
-        sourceType: "module",
-        plugins: ["typescript"],
-      });
-    },
+    parse: source => babelParse(source, {
+      sourceType: 'module',
+      plugins: ['typescript'],
+    }),
   },
 });
 
-// Step 2: Extract import declarations
-const importNodes: n.ImportDeclaration[] = [];
-recast.types.visit(ast, {
+const valueImportNodes: namedTypes.ImportDeclaration[] = [];
+const typeImportNodes: namedTypes.ImportDeclaration[] = [];
+
+types.visit(ast, {
   visitImportDeclaration(path) {
-    importNodes.push(path.node);
-    path.prune(); // Remove it from AST
+    switch (path.node.importKind) {
+      case 'value':
+        valueImportNodes.push(path.node);
+        break;
+      case 'type':
+        typeImportNodes.push(path.node);
+        break;
+      default:
+        throw new Error(`unhandled import kind: ${path.node.importKind}`);
+    }
+    path.prune();
     return false;
   },
 });
 
-// Step 3: Sort imports (alphabetically by module name)
-importNodes.sort((a, b) =>
-  a.source.value.localeCompare(b.source.value)
-);
+valueImportNodes.sort(bySourceValue);
+typeImportNodes.sort(bySourceValue);
 
-// Step 4: Reinsert sorted imports at the top
-ast.program.body = [...importNodes, ...ast.program.body];
+ast.program.body = [
+  ...valueImportNodes,
+  ...typeImportNodes,
+  ...ast.program.body,
+];
 
-// Step 5: Generate code back
-const output = recast.print(ast).code;
+const output = print(ast).code;
 
 console.log(output);

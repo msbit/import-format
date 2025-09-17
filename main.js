@@ -1,76 +1,45 @@
 "use strict";
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || (function () {
-    var ownKeys = function(o) {
-        ownKeys = Object.getOwnPropertyNames || function (o) {
-            var ar = [];
-            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
-            return ar;
-        };
-        return ownKeys(o);
-    };
-    return function (mod) {
-        if (mod && mod.__esModule) return mod;
-        var result = {};
-        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
-        __setModuleDefault(result, mod);
-        return result;
-    };
-})();
 Object.defineProperty(exports, "__esModule", { value: true });
-const recast = __importStar(require("recast"));
-const babelParser = __importStar(require("@babel/parser"));
-// Sample code with comments and spacing
-const code = `
-// A comment before imports
-
-import z from "z-lib";   // Z import
-import a from "a-lib";   // A import
-
-// Utility import
-import { b } from "./utils";
-
-const something = 42;
-`;
-// Step 1: Parse using Recast with Babel parser
-const ast = recast.parse(code, {
+const parser_1 = require("@babel/parser");
+const recast_1 = require("recast");
+const node_process_1 = require("node:process");
+const node_fs_1 = require("node:fs");
+const code = (0, node_fs_1.readFileSync)(node_process_1.argv[2], 'utf8');
+const bySourceValue = (a, b) => (typeof a.source.value !== 'string' || typeof b.source.value !== 'string')
+    ? 0
+    : a.source.value.localeCompare(b.source.value);
+const ast = (0, recast_1.parse)(code, {
     parser: {
-        parse(source) {
-            return babelParser.parse(source, {
-                sourceType: "module",
-                plugins: ["typescript"],
-            });
-        },
+        parse: source => (0, parser_1.parse)(source, {
+            sourceType: 'module',
+            plugins: ['typescript'],
+        }),
     },
 });
-// Step 2: Extract import declarations
-const importNodes = [];
-recast.types.visit(ast, {
+const valueImportNodes = [];
+const typeImportNodes = [];
+recast_1.types.visit(ast, {
     visitImportDeclaration(path) {
-        importNodes.push(path.node);
-        path.prune(); // Remove it from AST
+        switch (path.node.importKind) {
+            case 'value':
+                valueImportNodes.push(path.node);
+                break;
+            case 'type':
+                typeImportNodes.push(path.node);
+                break;
+            default:
+                throw new Error(`unhandled import kind: ${path.node.importKind}`);
+        }
+        path.prune();
         return false;
     },
 });
-// Step 3: Sort imports (alphabetically by module name)
-importNodes.sort((a, b) => a.source.value.localeCompare(b.source.value));
-// Step 4: Reinsert sorted imports at the top
-ast.program.body = [...importNodes, ...ast.program.body];
-// Step 5: Generate code back
-const output = recast.print(ast).code;
+valueImportNodes.sort(bySourceValue);
+typeImportNodes.sort(bySourceValue);
+ast.program.body = [
+    ...valueImportNodes,
+    ...typeImportNodes,
+    ...ast.program.body,
+];
+const output = (0, recast_1.print)(ast).code;
 console.log(output);
