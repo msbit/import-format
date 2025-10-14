@@ -26,6 +26,7 @@ for (const filename of node_process_1.argv.slice(2)) {
             parse: source => (0, parser_1.parse)(source, {
                 sourceType: 'module',
                 plugins: ['jsx', 'typescript'],
+                tokens: true,
             }),
         },
     });
